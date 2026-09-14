@@ -37,6 +37,7 @@ export default function MapaCalorInfracciones({ filas }) {
   const [mostrarPuntos, setMostrarPuntos] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('todos'); // todos | criticos
+  const [mapListo, setMapListo] = useState(false);
 
   const puntos = useMemo(
     () =>
@@ -91,8 +92,13 @@ export default function MapaCalorInfracciones({ filas }) {
     // IMPORTANTE: si el tamaño del contenedor no vuelve a cambiar después
     // del montaje (layout fijo con grid), el ResizeObserver de arriba
     // nunca dispara — por eso forzamos igual un invalidateSize() explícito
-    // apenas el navegador termina el layout inicial.
-    requestAnimationFrame(() => map.invalidateSize());
+    // apenas el navegador termina el layout inicial. Las capas de datos
+    // (calor/puntos) esperan a "mapListo" para no calcularse con un
+    // tamaño de mapa todavía incorrecto.
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+      setMapListo(true);
+    });
 
     return () => {
       resizeObserver.disconnect();
@@ -113,7 +119,7 @@ export default function MapaCalorInfracciones({ filas }) {
   // Capa de calor
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapListo) return;
     if (heatLayerRef.current) {
       map.removeLayer(heatLayerRef.current);
       heatLayerRef.current = null;
@@ -122,12 +128,12 @@ export default function MapaCalorInfracciones({ filas }) {
       const pesos = puntos.map((p) => [p.latitud, p.longitud, Math.min(1, Math.max(0.2, p.exceso / 40))]);
       heatLayerRef.current = L.heatLayer(pesos, { radius: Number(radio), blur: 20, maxZoom: 14 }).addTo(map);
     }
-  }, [puntos, mostrarCalor, radio]);
+  }, [puntos, mostrarCalor, radio, mapListo]);
 
   // Puntos GPS individuales
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapListo) return;
     if (puntosLayerRef.current) {
       map.removeLayer(puntosLayerRef.current);
       puntosLayerRef.current = null;
@@ -158,7 +164,7 @@ export default function MapaCalorInfracciones({ filas }) {
       // "Centrar en datos" para evitar el cálculo de zoom con un tamaño
       // de contenedor todavía no asentado.
     }
-  }, [puntos, mostrarPuntos]);
+  }, [puntos, mostrarPuntos, mapListo]);
 
   function irATramo(t) {
     if (mapRef.current && t.lat && t.lng) {
