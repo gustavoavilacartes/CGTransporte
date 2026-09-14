@@ -131,12 +131,9 @@ export default function MapaCalorInfracciones({ filas }) {
       map.removeLayer(heatLayerRef.current);
       heatLayerRef.current = null;
     }
-    console.log('[MapaCalor] heat effect', { mapListo, mostrarCalor, puntosLen: puntos.length, muestra: puntos[0] });
     if (mostrarCalor && puntos.length > 0) {
       const pesos = puntos.map((p) => [p.latitud, p.longitud, Math.min(1, Math.max(0.2, p.exceso / 40))]);
-      console.log('[MapaCalor] pesos muestra', pesos.slice(0, 3));
       heatLayerRef.current = L.heatLayer(pesos, { radius: Number(radio), blur: 20, maxZoom: 14 }).addTo(map);
-      console.log('[MapaCalor] heatLayer agregado', heatLayerRef.current);
     }
   }, [puntos, mostrarCalor, radio, mapListo]);
 
@@ -148,7 +145,6 @@ export default function MapaCalorInfracciones({ filas }) {
       map.removeLayer(puntosLayerRef.current);
       puntosLayerRef.current = null;
     }
-    console.log('[MapaCalor] puntos effect', { mapListo, mostrarPuntos, puntosLen: puntos.length });
     if (mostrarPuntos && puntos.length > 0) {
       const grupo = L.layerGroup();
       puntos.forEach((p) => {
@@ -170,7 +166,6 @@ export default function MapaCalorInfracciones({ filas }) {
       });
       grupo.addTo(map);
       puntosLayerRef.current = grupo;
-      console.log('[MapaCalor] grupo de puntos agregado', grupo, 'capas internas:', grupo.getLayers().length);
       map.invalidateSize();
       // Ya no se ajusta el zoom automáticamente al cargar — ver botón
       // "Centrar en datos" para evitar el cálculo de zoom con un tamaño
@@ -181,7 +176,7 @@ export default function MapaCalorInfracciones({ filas }) {
   function irATramo(t) {
     if (mapRef.current && t.lat && t.lng) {
       mapRef.current.invalidateSize();
-      mapRef.current.setView([t.lat, t.lng], 14, { animate: true });
+      mapRef.current.setView([t.lat, t.lng], 12, { animate: true });
     }
   }
 
