@@ -53,7 +53,7 @@ export default function ImportadorExcel({ config, onCargaCompleta }) {
     lector.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
         const filasCrudas = XLSX.utils.sheet_to_json(primeraHoja, { defval: null });
 
