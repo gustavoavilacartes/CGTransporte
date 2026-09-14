@@ -24,7 +24,7 @@ function severidad(exceso) {
   return 'Leve';
 }
 
-export default function MapaCalorInfracciones({ filas }) {
+export default function MapaCalorInfracciones({ filas, ocultarKpis = false }) {
   const mapDivRef = useRef(null);
   const mapRef = useRef(null);
   const heatLayerRef = useRef(null);
@@ -192,6 +192,8 @@ export default function MapaCalorInfracciones({ filas }) {
 
   return (
     <div>
+      {!ocultarKpis && (
+      <>
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--line)', border: '1px solid var(--line)', marginBottom: 16 }}>
         <div style={{ background: '#fff', padding: '16px 20px' }}>
@@ -218,6 +220,8 @@ export default function MapaCalorInfracciones({ filas }) {
           {tramoTop && <div className="num" style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{tramoTop.eventos} eventos</div>}
         </div>
       </div>
+      </>
+      )}
 
       {/* Controles */}
       <div style={{ background: '#fff', border: '1px solid var(--line)', borderBottom: 'none', padding: '14px 20px', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
