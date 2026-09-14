@@ -100,7 +100,7 @@ export default function ImportadorExcel({ config, onCargaCompleta }) {
     const { data, error } = await supabase
       .from(config.tabla)
       .upsert(filasValidas, { onConflict: config.llaveUpsert.join(',') })
-      .select('id_alarma');
+      .select(config.llaveUpsert.join(','));
 
     if (error) {
       setErrores([`Error al subir a Supabase: ${error.message}`]);
