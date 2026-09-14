@@ -2,6 +2,10 @@
 
 function parseDecimalCL(valor) {
   if (valor === null || valor === undefined || valor === '') return null;
+
+  // Si SheetJS ya entregó un número (celda con formato numérico), se usa tal cual
+  if (typeof valor === 'number') return valor;
+
   const texto = String(valor).trim().replace(/\./g, '').replace(',', '.');
   const num = Number(texto);
   return Number.isNaN(num) ? null : num;
@@ -9,20 +13,44 @@ function parseDecimalCL(valor) {
 
 function parseEnteroCL(valor) {
   if (valor === null || valor === undefined || valor === '') return null;
+  if (typeof valor === 'number') return Math.round(valor);
   const num = parseInt(String(valor).trim(), 10);
   return Number.isNaN(num) ? null : num;
 }
 
 function parseFechaCL(valor) {
-  // Espera "DD-MM-YYYY HH:MM"
-  if (!valor) return null;
+  if (valor === null || valor === undefined || valor === '') return null;
+
+  // Caso 1: SheetJS ya entregó un objeto Date (cellDates: true)
+  if (valor instanceof Date) {
+    return formatearFechaISO(valor);
+  }
+
+  // Caso 2: número serial de Excel (columna con formato fecha pero
+  // sheet_to_json no lo convirtió) — ej. 46365.629340...
+  if (typeof valor === 'number') {
+    const fecha = new Date(Math.round((valor - 25569) * 86400 * 1000));
+    return formatearFechaISO(fecha);
+  }
+
+  // Caso 3: texto "DD-MM-YYYY HH:MM"
   const texto = String(valor).trim();
-  const match = texto.match(
-    /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/
-  );
-  if (!match) return null;
-  const [, dd, mm, yyyy, hh, min] = match;
-  // ISO 8601 — timestamp sin zona horaria, tal como viene el dato origen
+  const match = texto.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+  if (match) {
+    const [, dd, mm, yyyy, hh, min] = match;
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
+  }
+  return null;
+}
+
+function formatearFechaISO(date) {
+  // Usa componentes UTC: el serial de Excel no tiene zona horaria propia,
+  // y tanto la conversión manual como cellDates de SheetJS son UTC-based.
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const hh = String(date.getUTCHours()).padStart(2, '0');
+  const min = String(date.getUTCMinutes()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
 }
 
