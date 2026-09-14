@@ -41,6 +41,82 @@ export default function ImportadorExcel({ config, onCargaCompleta }) {
     return { filaDB, erroresFila };
   }
 
+  function parseCSVTexto(texto, delimitador = ';') {
+    const textoLimpio = texto.replace(/^\uFEFF/, ''); // quitar BOM si viene
+    const lineas = textoLimpio.split(/\r\n|\n|\r/).filter((l) => l.length > 0);
+
+    function parsearLinea(linea) {
+      const valores = [];
+      let actual = '';
+      let entreComillas = false;
+      for (let i = 0; i < linea.length; i++) {
+        const c = linea[i];
+        if (entreComillas) {
+          if (c === '"') {
+            if (linea[i + 1] === '"') {
+              actual += '"';
+              i++;
+            } else {
+              entreComillas = false;
+            }
+          } else {
+            actual += c;
+          }
+        } else if (c === '"') {
+          entreComillas = true;
+        } else if (c === delimitador) {
+          valores.push(actual);
+          actual = '';
+        } else {
+          actual += c;
+        }
+      }
+      valores.push(actual);
+      return valores;
+    }
+
+    if (lineas.length === 0) return [];
+    const headers = parsearLinea(lineas[0]).map((h) => h.trim());
+    return lineas.slice(1).map((linea) => {
+      const valores = parsearLinea(linea);
+      const fila = {};
+      headers.forEach((h, idx) => {
+        const v = valores[idx];
+        fila[h] = v === undefined || v === '' ? null : v;
+      });
+      return fila;
+    });
+  }
+
+  function procesarFilasCrudas(filasCrudas) {
+    if (filasCrudas.length === 0) {
+      setErrores(['El archivo no tiene filas de datos.']);
+      setEstado('error');
+      return;
+    }
+
+    const headers = Object.keys(filasCrudas[0]);
+    const faltantes = validarEncabezados(headers);
+    if (faltantes.length > 0) {
+      setErrores([
+        `Faltan columnas esperadas en el archivo: ${faltantes.join(', ')}`,
+      ]);
+      setEstado('error');
+      return;
+    }
+
+    const todosLosErrores = [];
+    const filasTransformadas = filasCrudas.map((fila, i) => {
+      const { filaDB, erroresFila } = transformarFila(fila, i);
+      todosLosErrores.push(...erroresFila);
+      return filaDB;
+    });
+
+    setFilas(filasTransformadas);
+    setErrores(todosLosErrores);
+    setEstado('previsualizando');
+  }
+
   function manejarArchivo(e) {
     const archivo = e.target.files[0];
     if (!archivo) return;
@@ -49,40 +125,22 @@ export default function ImportadorExcel({ config, onCargaCompleta }) {
     setErrores([]);
     setResultado(null);
 
+    const esCSV = /\.csv$/i.test(archivo.name);
     const lector = new FileReader();
+
     lector.onload = (evt) => {
       try {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-        const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
-        const filasCrudas = XLSX.utils.sheet_to_json(primeraHoja, { defval: null });
-
-        if (filasCrudas.length === 0) {
-          setErrores(['El archivo no tiene filas de datos.']);
-          setEstado('error');
-          return;
+        let filasCrudas;
+        if (esCSV) {
+          const texto = new TextDecoder('utf-8').decode(evt.target.result);
+          filasCrudas = parseCSVTexto(texto, ';');
+        } else {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
+          filasCrudas = XLSX.utils.sheet_to_json(primeraHoja, { defval: null });
         }
-
-        const headers = Object.keys(filasCrudas[0]);
-        const faltantes = validarEncabezados(headers);
-        if (faltantes.length > 0) {
-          setErrores([
-            `Faltan columnas esperadas en el Excel: ${faltantes.join(', ')}`,
-          ]);
-          setEstado('error');
-          return;
-        }
-
-        const todosLosErrores = [];
-        const filasTransformadas = filasCrudas.map((fila, i) => {
-          const { filaDB, erroresFila } = transformarFila(fila, i);
-          todosLosErrores.push(...erroresFila);
-          return filaDB;
-        });
-
-        setFilas(filasTransformadas);
-        setErrores(todosLosErrores);
-        setEstado('previsualizando');
+        procesarFilasCrudas(filasCrudas);
       } catch (err) {
         setErrores([`Error leyendo el archivo: ${err.message}`]);
         setEstado('error');
@@ -132,7 +190,7 @@ export default function ImportadorExcel({ config, onCargaCompleta }) {
       </h3>
 
       {estado === 'idle' && (
-        <input type="file" accept=".xlsx,.xls" onChange={manejarArchivo} />
+        <input type="file" accept=".xlsx,.xls,.csv" onChange={manejarArchivo} />
       )}
 
       {estado === 'leyendo' && <p>Leyendo archivo…</p>}
