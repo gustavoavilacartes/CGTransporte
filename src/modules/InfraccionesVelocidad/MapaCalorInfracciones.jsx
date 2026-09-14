@@ -81,7 +81,14 @@ export default function MapaCalorInfracciones({ filas }) {
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     mapRef.current = map;
     capaBaseRef.current = L.tileLayer(CAPAS_BASE.satelite.url, { attribution: CAPAS_BASE.satelite.attribution }).addTo(map);
+
+    // El contenedor puede no tener su altura final calculada en el primer render
+    // (layout con grid/flex) — forzamos un recálculo tras el montaje.
+    requestAnimationFrame(() => map.invalidateSize());
+    const t = setTimeout(() => map.invalidateSize(), 200);
+
     return () => {
+      clearTimeout(t);
       map.remove();
       mapRef.current = null;
     };
@@ -205,8 +212,8 @@ export default function MapaCalorInfracciones({ filas }) {
       </div>
 
       {/* Mapa + sidebar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', border: '1px solid var(--line)', height: 480 }}>
-        <div style={{ borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gridTemplateRows: '480px', border: '1px solid var(--line)', height: 480 }}>
+        <div style={{ borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', overflow: 'hidden', height: 480 }}>
           <div style={{ padding: 14, borderBottom: '1px solid var(--line)' }}>
             <input
               placeholder="Buscar ruta o tramo…"
@@ -255,7 +262,7 @@ export default function MapaCalorInfracciones({ filas }) {
             })}
           </div>
         </div>
-        <div ref={mapDivRef} style={{ height: '100%', width: '100%' }} />
+        <div ref={mapDivRef} style={{ height: 480, width: '100%' }} />
       </div>
     </div>
   );
