@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg: #F2F1EE;
+  --surface: #FFFFFF;
+  --ink: #1C2321;
+  --ink-soft: #5B655F;
+  --line: #D9D6CE;
+  --primary: #2F4538;
+  --primary-soft: #3E5A49;
+  --primary-line: #4A6656;
+  --alert: #B5502D;
+  --alert-bg: #F5E5DD;
+}
+
+*{ box-sizing: border-box; }
+html, body, #root{ margin:0; padding:0; height:100%; }
+body{
+  font-family:'Public Sans', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+button{ font-family: inherit; cursor: pointer; }
