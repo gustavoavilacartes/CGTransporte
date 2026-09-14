@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useInfraccionesVelocidad } from '../../hooks/useInfraccionesVelocidad';
 import ImportadorExcel from '../../components/ImportadorExcel';
 import { configInfraccionesVelocidad } from '../../config/importConfig.infraccionesVelocidad';
+import MapaCalorInfracciones from './MapaCalorInfracciones';
 
 const kpiBoxStyle = { background: '#fff', padding: '18px 20px' };
 const kpiLabelStyle = { fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 10 };
@@ -35,6 +36,7 @@ export default function InfraccionesVelocidadView() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroSeveridad, setFiltroSeveridad] = useState('Todas');
   const [filtroZona, setFiltroZona] = useState('Todas');
+  const [vista, setVista] = useState('auditoria'); // auditoria | mapa
 
   const enriquecidas = useMemo(
     () =>
@@ -86,6 +88,26 @@ export default function InfraccionesVelocidadView() {
 
   return (
     <div>
+      {/* Selector de vista */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <button
+          onClick={() => setVista('auditoria')}
+          style={{ padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid var(--line)', background: vista === 'auditoria' ? 'var(--primary)' : '#fff', color: vista === 'auditoria' ? '#fff' : 'var(--ink)' }}
+        >
+          Auditoría
+        </button>
+        <button
+          onClick={() => setVista('mapa')}
+          style={{ padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid var(--line)', background: vista === 'mapa' ? 'var(--primary)' : '#fff', color: vista === 'mapa' ? '#fff' : 'var(--ink)' }}
+        >
+          Mapa de calor
+        </button>
+      </div>
+
+      {vista === 'mapa' && <MapaCalorInfracciones filas={enriquecidas} />}
+
+      {vista === 'auditoria' && (
+      <>
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1, background: 'var(--line)', border: '1px solid var(--line)', marginBottom: 24 }}>
         <div style={kpiBoxStyle}>
@@ -222,6 +244,8 @@ export default function InfraccionesVelocidadView() {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
