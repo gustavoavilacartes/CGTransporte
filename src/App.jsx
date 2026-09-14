@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import InfraccionesVelocidadView from './modules/InfraccionesVelocidad/View';
+import RendimientoFlotaView from './modules/RendimientoFlota/View';
+import ProductividadView from './modules/Productividad/View';
 
 const MODULOS = [
   { id: 'resumen', label: 'Resumen general', disponible: false },
@@ -7,8 +9,8 @@ const MODULOS = [
   { id: 'geocercas', label: 'Geocercas y rutas prohibidas', disponible: false },
   { id: 'jornada', label: 'Jornada laboral', disponible: false },
   { id: 'somnolencia', label: 'Adherencia — somnolencia', disponible: false },
-  { id: 'rendimiento', label: 'Rendimiento de flota', disponible: false },
-  { id: 'productividad', label: 'Productividad', disponible: false },
+  { id: 'rendimiento', label: 'Rendimiento de flota', disponible: true },
+  { id: 'productividad', label: 'Productividad', disponible: true },
 ];
 
 function ModuloPendiente({ nombre }) {
@@ -93,7 +95,11 @@ export default function App() {
 
         <div style={{ padding: '28px 32px 60px 32px' }}>
           {moduloActivo === 'infracciones-velocidad' && <InfraccionesVelocidadView />}
-          {moduloActivo !== 'infracciones-velocidad' && <ModuloPendiente nombre={modulo?.label} />}
+          {moduloActivo === 'rendimiento' && <RendimientoFlotaView />}
+          {moduloActivo === 'productividad' && <ProductividadView />}
+          {!['infracciones-velocidad', 'rendimiento', 'productividad'].includes(moduloActivo) && (
+            <ModuloPendiente nombre={modulo?.label} />
+          )}
         </div>
       </main>
 
