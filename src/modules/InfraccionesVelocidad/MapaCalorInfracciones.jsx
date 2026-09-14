@@ -88,6 +88,12 @@ export default function MapaCalorInfracciones({ filas }) {
     const resizeObserver = new ResizeObserver(() => map.invalidateSize());
     resizeObserver.observe(mapDivRef.current);
 
+    // IMPORTANTE: si el tamaño del contenedor no vuelve a cambiar después
+    // del montaje (layout fijo con grid), el ResizeObserver de arriba
+    // nunca dispara — por eso forzamos igual un invalidateSize() explícito
+    // apenas el navegador termina el layout inicial.
+    requestAnimationFrame(() => map.invalidateSize());
+
     return () => {
       resizeObserver.disconnect();
       map.remove();
@@ -147,21 +153,26 @@ export default function MapaCalorInfracciones({ filas }) {
       });
       grupo.addTo(map);
       puntosLayerRef.current = grupo;
-
-      // Aseguramos el tamaño real del contenedor antes de calcular el
-      // encuadre — si el mapa aún cree tener un tamaño incorrecto (0 o
-      // distinto al real), fitBounds calcula un zoom equivocado de forma
-      // permanente, aunque el renderizado de tiles se vea "arreglado" después.
       map.invalidateSize();
-      const bounds = L.latLngBounds(puntos.map((p) => [p.latitud, p.longitud]));
-      if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
+      // Ya no se ajusta el zoom automáticamente al cargar — ver botón
+      // "Centrar en datos" para evitar el cálculo de zoom con un tamaño
+      // de contenedor todavía no asentado.
     }
   }, [puntos, mostrarPuntos]);
 
   function irATramo(t) {
     if (mapRef.current && t.lat && t.lng) {
+      mapRef.current.invalidateSize();
       mapRef.current.setView([t.lat, t.lng], 14, { animate: true });
     }
+  }
+
+  function centrarEnDatos() {
+    const map = mapRef.current;
+    if (!map || puntos.length === 0) return;
+    map.invalidateSize();
+    const bounds = L.latLngBounds(puntos.map((p) => [p.latitud, p.longitud]));
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
   }
 
   const inputStyle = { padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 4, fontSize: 13 };
@@ -213,7 +224,13 @@ export default function MapaCalorInfracciones({ filas }) {
         <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
           <input type="checkbox" checked={mostrarPuntos} onChange={(e) => setMostrarPuntos(e.target.checked)} /> Puntos GPS
         </label>
-        <span style={{ fontSize: 12, color: 'var(--ink-soft)', marginLeft: 'auto' }}>Haz clic en un punto GPS para auditar el evento</span>
+        <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Haz clic en un punto GPS para auditar el evento</span>
+        <button
+          onClick={centrarEnDatos}
+          style={{ marginLeft: 'auto', padding: '7px 12px', fontSize: 12.5, border: '1px solid var(--line)', borderRadius: 4, background: '#fff', color: 'var(--ink)' }}
+        >
+          Centrar en datos
+        </button>
       </div>
 
       {/* Mapa + sidebar */}
