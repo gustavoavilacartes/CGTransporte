@@ -82,13 +82,14 @@ export default function MapaCalorInfracciones({ filas }) {
     mapRef.current = map;
     capaBaseRef.current = L.tileLayer(CAPAS_BASE.satelite.url, { attribution: CAPAS_BASE.satelite.attribution }).addTo(map);
 
-    // El contenedor puede no tener su altura final calculada en el primer render
-    // (layout con grid/flex) — forzamos un recálculo tras el montaje.
-    requestAnimationFrame(() => map.invalidateSize());
-    const t = setTimeout(() => map.invalidateSize(), 200);
+    // El contenedor puede no tener su altura final calculada en el primer
+    // render (layout con grid/flex) — nos suscribimos a sus cambios de
+    // tamaño para mantener el mapa siempre correctamente dimensionado.
+    const resizeObserver = new ResizeObserver(() => map.invalidateSize());
+    resizeObserver.observe(mapDivRef.current);
 
     return () => {
-      clearTimeout(t);
+      resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -147,7 +148,11 @@ export default function MapaCalorInfracciones({ filas }) {
       grupo.addTo(map);
       puntosLayerRef.current = grupo;
 
-      // Ajustar vista solo la primera vez que llegan puntos
+      // Aseguramos el tamaño real del contenedor antes de calcular el
+      // encuadre — si el mapa aún cree tener un tamaño incorrecto (0 o
+      // distinto al real), fitBounds calcula un zoom equivocado de forma
+      // permanente, aunque el renderizado de tiles se vea "arreglado" después.
+      map.invalidateSize();
       const bounds = L.latLngBounds(puntos.map((p) => [p.latitud, p.longitud]));
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
     }
